@@ -8,9 +8,9 @@ properties([
 pipeline {
     agent any
     stages {
-        stage('Checkout from Git') {
+        stage('Checkout from GitLab') {
             steps {
-                git branch: 'main', url: 'https://github.com/uniquesreedhar/Reddit-Project.git'
+                git branch: 'main', url: 'https://gitlab.com/devops-sree/working-project.git'
             }
         }
         stage('Initializing Terraform') {
