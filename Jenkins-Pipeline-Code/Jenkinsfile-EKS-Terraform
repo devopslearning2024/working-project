@@ -7,7 +7,7 @@ properties([
 
 pipeline {
     agent any
-    // stages {
+     stages {
     //     stage('Checkout from GitLab') {
     //         steps {
     //             git branch: 'main', url: 'https://gitlab.com/devops-sree/working-project.git'
