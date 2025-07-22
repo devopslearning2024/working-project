@@ -7,12 +7,12 @@ properties([
 
 pipeline {
     agent any
-    stages {
-        stage('Checkout from GitLab') {
-            steps {
-                git branch: 'main', url: 'https://gitlab.com/devops-sree/working-project.git'
-            }
-        }
+    // stages {
+    //     stage('Checkout from GitLab') {
+    //         steps {
+    //             git branch: 'main', url: 'https://gitlab.com/devops-sree/working-project.git'
+    //         }
+    //     }
         stage('Initializing Terraform') {
             steps {
                 withAWS(credentials: 'aws-key', region: 'us-east-1') {
