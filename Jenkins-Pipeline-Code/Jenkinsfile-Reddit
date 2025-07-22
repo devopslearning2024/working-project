@@ -1,20 +1,20 @@
-pipeline {
+pipeline{
     agent any
-    tools {
+    tools{
         jdk 'jdk'
         nodejs 'nodejs'
     }
     environment {
-        SCANNER_HOME = tool 'sonar-scanner'
+        SCANNER_HOME=tool 'sonar-scanner'
     }
     stages {
-        stage('clean workspace') {
-            steps {
+        stage('clean workspace'){
+            steps{
                 cleanWs()
             }
         }
-        stage('Checkout from GitLab') {
-            steps {
+        stage('Checkout from GitLab'){
+            steps{
                 git branch: 'main', url: 'https://gitlab.com/devops-sree/working-project.git'
             }
         }
@@ -23,18 +23,16 @@ pipeline {
                 sh "npm install"
             }
         }
-        stage("Sonarqube Analysis ") {
-            steps {
+        stage("Sonarqube Analysis "){
+            steps{
                 withSonarQubeEnv('sonar-server') {
-                    sh '''
-                        $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Reddit \
-                        -Dsonar.projectKey=Reddit
-                    '''
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Reddit \
+                    -Dsonar.projectKey=Reddit '''
                 }
             }
         }
-        stage("quality gate") {
-            steps {
+        stage("quality gate"){
+           steps {
                 script {
                     waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
                 }
@@ -51,19 +49,19 @@ pipeline {
                 sh "trivy fs . > trivyfs.txt"
             }
         }
-        stage("Docker Build & Push") {
-            steps {
-                script {
-                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                        sh "docker build -t reddit ."
-                        sh "docker tag reddit devopslearning25/reddit:${BUILD_NUMBER}"
-                        sh "docker push devopslearning25/reddit:${BUILD_NUMBER}"
+        stage("Docker Build & Push"){
+            steps{
+                script{
+                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){
+                       sh "docker build -t reddit ."
+                       sh "docker tag reddit devopslearning25/reddit:${BUILD_NUMBER} "
+                       sh "docker push devopslearning25/reddit:${BUILD_NUMBER} "
                     }
                 }
             }
         }
-        stage("TRIVY") {
-            steps {
+        stage("TRIVY"){
+            steps{
                 sh "trivy image devopslearning25/reddit:latest > trivy.txt"
             }
         }
@@ -73,20 +71,18 @@ pipeline {
                 GIT_USER_NAME = "devopsaws2025"
             }
             steps {
-                dir('K8s') {
-                    // Configure git and update deployment.yml locally
-                    sh '''
-                        git config user.email "devopslearning.aws.123@gmail.com"
-                        git config user.name "devopsaws2025"
-                        BUILD_NUMBER=${BUILD_NUMBER}
-                        imageTag=$(grep -oP '(?<=reddit:)[^ ]+' deployment.yml)
-                        sed -i "s/reddit:${imageTag}/reddit:${BUILD_NUMBER}/" deployment.yml
-                        git add deployment.yml
-                        git commit -m "Update deployment Image to version ${BUILD_NUMBER}"
-                    '''
-                    // Push using the GitLab PAT as Secret text
-                    withCredentials([string(credentialsId: 'gitlab-token', variable: 'GITLAB_TOKEN')]) {
+                dir('K8s'){
+                    withCredentials([string(credentialsId: 'githubcred', variable: 'GITHUB_TOKEN')]) {
                         sh '''
+                            git config user.email "devopslearning.aws.123@gmail.com"
+                            git config user.name "devopsaws2025"
+                            BUILD_NUMBER=${BUILD_NUMBER}
+                            echo $BUILD_NUMBER
+                            imageTag=$(grep -oP '(?<=reddit:)[^ ]+' deployment.yml)
+                            echo $imageTag
+                            sed -i "s/reddit:${imageTag}/reddit:${BUILD_NUMBER}/" deployment.yml
+                            git add deployment.yml
+                            git commit -m "Update deployment Image to version \${BUILD_NUMBER}"
                             git push https://${GITLAB_TOKEN}@gitlab.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
                         '''
                     }
