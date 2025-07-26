@@ -49,3 +49,11 @@ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip
 sudo apt-get install unzip -y
 unzip awscliv2.zip
 sudo ./aws/install
+
+#Owasp DP-Check
+cd /opt
+sudo mkdir -p owasp-dc
+cd owasp-dc
+wget https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
+unzip dependency-check-8.4.0-release.zip
+
