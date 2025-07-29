@@ -106,7 +106,7 @@ def awsCreds = new AWSCredentialsImpl(
     CredentialsScope.GLOBAL,
     "aws-key",
     "aws credentials for pipeline",
-    "AKIAU6GD3IOKIPUK42J2",
+    "REPLACE_WITH_REAL_ACCESS_KEY",
     "REPLACE_WITH_REAL_SECRET_KEY"
 )
 credentials_store.addCredentials(Domain.global(), awsCreds)
