@@ -50,7 +50,7 @@ sudo apt-get install unzip -y
 unzip awscliv2.zip
 sudo ./aws/install
 
-#Owasp DP-Check
+#Owasp DP-Check ---> We added(Sree)
 cd /opt
 sudo mkdir -p owasp-dc
 cd owasp-dc
