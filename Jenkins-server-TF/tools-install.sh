@@ -55,6 +55,13 @@ echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://
 sudo apt update
 sudo apt install terraform -y
 
+#Owasp DP-Check ---> We added(Sree)
+cd /opt
+sudo mkdir -p owasp-dc
+cd owasp-dc
+wget https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
+unzip dependency-check-8.4.0-release.zip
+
 # Installing Trivy
 #!/bin/bash
 sudo apt-get install wget apt-transport-https gnupg lsb-release -y
