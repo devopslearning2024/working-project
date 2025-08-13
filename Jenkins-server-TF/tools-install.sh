@@ -13,6 +13,9 @@ sudo mkdir -p owasp-dc
 cd owasp-dc
 wget https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
 unzip dependency-check-8.4.0-release.zip
+sudo chown -R jenkins:jenkins /opt/owasp-dc/dependency-check/data
+sudo chmod -R 755 /opt/owasp-dc/dependency-check/data 
+sudo chmod -R 777 /opt/owasp-dc/dependency-check/data
 
 # --- Jenkins Installation ---
 curl -fsSL https://pkg.jenkins.io/debian/jenkins.io-2023.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
