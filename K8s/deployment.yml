@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: reddit-clone
-        image: devopslearning25/reddit:6
+        image: devopslearning25/reddit:1
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
