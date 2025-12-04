@@ -47,15 +47,18 @@ pipeline{
         // }
 
            stage('OWASP FS SCAN') {
-    steps {
+            steps {
         sh """
-            # Create the output folder inside Jenkins workspace
-            mkdir -p dependency-check-report
+            echo 'Jenkins workspace is:'
+            echo \$WORKSPACE
+            ls -la \$WORKSPACE
+
+            mkdir -p \$WORKSPACE/dependency-check-report
 
             /opt/owasp-dc/dependency-check/bin/dependency-check.sh \
-              --scan . \
+              --scan \$WORKSPACE \
               --format ALL \
-              --out dependency-check-report \
+              --out \$WORKSPACE/dependency-check-report \
               --data /opt/owasp-dc/dependency-check/data \
               --noupdate
         """
@@ -66,6 +69,7 @@ pipeline{
         }
     }
 }
+
 
 
         stage('TRIVY FS SCAN') {
