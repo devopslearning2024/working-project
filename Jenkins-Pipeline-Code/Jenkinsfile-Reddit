@@ -40,22 +40,22 @@ pipeline {
         ------------------------ */
         stage('OWASP FS SCAN') {
             steps {
-                sh '''
-                    echo "Running OWASP Dependency Check..."
-                    dependency-check.sh \
-                        --scan . \
-                        --format ALL \
-                        --out dependency-check-report \
-                        --data ${DEP_CHECK_DATA} \
-                        --noupdate
-                '''
-            }
-            post {
-                always {
-                    dependencyCheckPublisher pattern: 'dependency-check-report/dependency-check-report.xml'
-                }
-            }
+        sh '''
+            dependency-check.sh \
+              --scan . \
+              --format ALL \
+              --out dependency-check-report \
+              --data /opt/owasp-dc/dependency-check/data \
+              --noupdate
+        '''
+    }
+    post {
+        always {
+            dependencyCheckPublisher pattern: 'dependency-check-report/dependency-check-report.xml'
         }
+    }
+}
+
 
         /* -----------------------
            🟧 TRIVY FS Scan 
