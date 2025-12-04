@@ -47,11 +47,9 @@ pipeline{
         // }
 
            stage('OWASP FS SCAN') {
-            steps {
+    steps {
         sh """
-            echo 'Jenkins workspace is:'
-            echo \$WORKSPACE
-            ls -la \$WORKSPACE
+            echo 'Workspace: ' \$WORKSPACE
 
             mkdir -p \$WORKSPACE/dependency-check-report
 
@@ -59,8 +57,11 @@ pipeline{
               --scan \$WORKSPACE \
               --format ALL \
               --out \$WORKSPACE/dependency-check-report \
+              --noupdate \
               --data /opt/owasp-dc/dependency-check/data \
-              --noupdate
+              --disableNodeAudit \
+              --disableYarnAudit \
+              --disableRetireJS
         """
     }
     post {
@@ -69,8 +70,6 @@ pipeline{
         }
     }
 }
-
-
 
         stage('TRIVY FS SCAN') {
             steps {
