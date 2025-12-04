@@ -1,96 +1,119 @@
-pipeline{
+pipeline {
     agent any
-    tools{
-        jdk 'jdk'
-        nodejs 'nodejs'
-    }
+
     environment {
-        SCANNER_HOME = tool 'sonar-scanner'
-        // OWASP local DB folder (already created & permissioned)
-        DEPENDENCY_CHECK_DATA = '/opt/owasp-dc/dependency-check/data'
+        // Dependency Check data folder
+        DEP_CHECK_DATA = "/opt/owasp-dc/dependency-check/data"
+        SCANNER_HOME = tool name: 'sonar-scanner'
     }
+
     stages {
-        stage('clean workspace'){
-            steps{
-                cleanWs()
-            }
-        }
-        stage('Checkout from GitLab'){
-            steps{
-                git branch: 'main', url: 'https://github.com/devopslearning2024/working-project.git'
-            }
-        }
-        stage('Install Dependencies') {
+
+        /* -----------------------
+           🟦 SonarQube Analysis
+        ------------------------ */
+        stage('SonarQube Analysis') {
             steps {
-                sh "npm install"
-            }
-        }
-        
-        stage("Sonarqube Analysis "){
-            steps{
                 withSonarQubeEnv('sonar-server') {
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Reddit \
-                    -Dsonar.projectKey=Reddit '''
+                    sh '''
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                            -Dsonar.projectKey=Reddit \
+                            -Dsonar.projectName=Reddit
+                    '''
                 }
             }
         }
-        stage("quality gate"){
-           steps {
+
+        /* -----------------------
+           🟩 Sonar Quality Gate
+        ------------------------ */
+        stage('Quality Gate') {
+            steps {
                 script {
                     waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
                 }
             }
         }
 
+        /* -----------------------
+           🟥 OWASP FS SCAN (FIXED)
+        ------------------------ */
         stage('OWASP FS SCAN') {
             steps {
-                // IMPORTANT: added --noupdate and --data to stop 403 and use local DB
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit --noupdate --data /opt/owasp-dc/dependency-check/data',
-                                odcInstallation: 'DP-Check'
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                sh '''
+                    echo "Running OWASP Dependency Check..."
+                    dependency-check.sh \
+                        --scan . \
+                        --format ALL \
+                        --out dependency-check-report \
+                        --data ${DEP_CHECK_DATA} \
+                        --noupdate
+                '''
+            }
+            post {
+                always {
+                    dependencyCheckPublisher pattern: 'dependency-check-report/dependency-check-report.xml'
+                }
             }
         }
 
+        /* -----------------------
+           🟧 TRIVY FS Scan 
+        ------------------------ */
         stage('TRIVY FS SCAN') {
             steps {
                 sh "trivy fs . > trivyfs.txt"
             }
         }
-        stage("Docker Build & Push"){
-            steps{
-                script{
-                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){
-                       sh "docker build -t reddit ."
-                       sh "docker tag reddit devopslearning25/reddit:${BUILD_NUMBER} "
-                       sh "docker push devopslearning25/reddit:${BUILD_NUMBER} "
+
+        /* -----------------------
+           🟦 Docker Build & Push
+        ------------------------ */
+        stage('Docker Build & Push') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+
+                        sh '''
+                            docker build -t reddit .
+                            docker tag reddit devopslearning25/reddit:${BUILD_NUMBER}
+                            docker push devopslearning25/reddit:${BUILD_NUMBER}
+                        '''
                     }
                 }
             }
         }
-        stage("TRIVY"){
-            steps{
+
+        /* -----------------------
+           🟪 TRIVY Image Scan
+        ------------------------ */
+        stage('TRIVY Image SCAN') {
+            steps {
                 sh "trivy image devopslearning25/reddit:${BUILD_NUMBER} > trivy.txt"
             }
         }
-        stage('Update Deployment file') {
+
+        /* -----------------------
+           🟫 Update Deployment File
+        ------------------------ */
+        stage('Update Deployment File') {
             environment {
-                GIT_REPO_NAME = "working-project"
-                GIT_USER_NAME = "devopslearning2024"
+                GIT_REPO = "~/working-project"
+                GIT_USER_NAME = "devopslearning024"
             }
             steps {
-                dir('K8s'){
+                dir("$GIT_REPO") {
                     withCredentials([string(credentialsId: 'githubcred', variable: 'GITHUB_TOKEN')]) {
+
                         sh '''
-                            git config user.email "devops.learning.aws.123@gmail.com"
-                            git config user.name "devopslearning2024"
-                            BUILD_NUMBER=${BUILD_NUMBER}
-                            echo $BUILD_NUMBER
-                            imageTag=$(grep -oP '(?<=reddit:)[^ ]+' deployment.yml)
-                            echo $imageTag
-                            sed -i "s/reddit:${imageTag}/reddit:${BUILD_NUMBER}/" deployment.yml
+                            git config user.email "devops.learning.ms.123@gmail.com"
+                            git config user.name "${GIT_USER_NAME}"
+
+                            sed -i "s|image: .*|image: devopslearning25/reddit:${BUILD_NUMBER}|" deployment.yml
+
                             git add deployment.yml
-                            git commit -m "Update deployment Image to version ${BUILD_NUMBER}"
-                            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
+                            git commit -m "Updated deployment image to version ${BUILD_NUMBER}"
+                            git push https://${GIT_USER_NAME}:${GITHUB_TOKEN}@github.com/devopslearning024/working-project.git HEAD:main
                         '''
                     }
                 }
