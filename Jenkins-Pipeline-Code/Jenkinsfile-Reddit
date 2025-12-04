@@ -5,7 +5,9 @@ pipeline{
         nodejs 'nodejs'
     }
     environment {
-        SCANNER_HOME=tool 'sonar-scanner'
+        SCANNER_HOME = tool 'sonar-scanner'
+        // OWASP local DB folder (already created & permissioned)
+        DEPENDENCY_CHECK_DATA = '/opt/owasp-dc/dependency-check/data'
     }
     stages {
         stage('clean workspace'){
@@ -39,12 +41,16 @@ pipeline{
                 }
             }
         }
+
         stage('OWASP FS SCAN') {
             steps {
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                // IMPORTANT: added --noupdate and --data to stop 403 and use local DB
+                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit --noupdate --data /opt/owasp-dc/dependency-check/data',
+                                odcInstallation: 'DP-Check'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
+
         stage('TRIVY FS SCAN') {
             steps {
                 sh "trivy fs . > trivyfs.txt"
@@ -83,7 +89,7 @@ pipeline{
                             echo $imageTag
                             sed -i "s/reddit:${imageTag}/reddit:${BUILD_NUMBER}/" deployment.yml
                             git add deployment.yml
-                            git commit -m "Update deployment Image to version \${BUILD_NUMBER}"
+                            git commit -m "Update deployment Image to version ${BUILD_NUMBER}"
                             git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
                         '''
                     }
