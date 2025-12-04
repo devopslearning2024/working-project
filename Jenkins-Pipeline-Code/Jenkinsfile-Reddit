@@ -46,23 +46,24 @@ pipeline{
         //     }
         // }
 
-//            stage('OWASP FS SCAN') {
-//             steps {
-//         sh '''
-//             dependency-check.sh \
-//               --scan . \
-//               --format ALL \
-//               --out dependency-check-report \
-//               --data /opt/owasp-dc/dependency-check/data \
-//               --noupdate
-//         '''
-//     }
-//     post {
-//         always {
-//             dependencyCheckPublisher pattern: 'dependency-check-report/dependency-check-report.xml'
-//         }
-//     }
-// }
+           stage('OWASP FS SCAN') {
+            steps {
+        sh """
+            /opt/owasp-dc/dependency-check/bin/dependency-check.sh \
+              --scan . \
+              --format ALL \
+              --out dependency-check-report \
+              --data /opt/owasp-dc/dependency-check/data \
+              --noupdate
+        """
+    }
+    post {
+        always {
+            dependencyCheckPublisher pattern: 'dependency-check-report/dependency-check-report.xml'
+        }
+    }
+}
+
         stage('TRIVY FS SCAN') {
             steps {
                 sh "trivy fs . > trivyfs.txt"
